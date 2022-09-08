@@ -2,10 +2,10 @@
 //
 #ifndef UTILS_H
 #define UTILS_H
-#include<iostream>
-#include<stdio.h>
-#include<pthread.h>
-#include<semaphore.h>
+#include <iostream>
+#include <stdio.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include "networkHeader.h"
 #include<exception>
 class  MyMutex{
@@ -87,6 +87,7 @@ void addSignal(int sigNum,void(handler)(int)){
     sigaction(sigNum,&sa,NULL);
 }
 
+//添加文件描述符
 void addEpollFd(int epollfd,int fd,bool oneShot){
     epoll_event event;
     event.data.fd =  fd;
@@ -97,9 +98,17 @@ void addEpollFd(int epollfd,int fd,bool oneShot){
     epoll_ctl(epollfd,EPOLL_CTL_ADD,fd,&event);
 }; 
 
+//删除文件描述符
 void delEpollFd(int epollfd,int fd){
     epoll_ctl(epollfd,EPOLL_CTL_DEL,fd,0);
     close(fd);
+}
+//修改文件描述符监听的事件
+void modEpollFd(int epollfd,int fd,int ev){
+    epoll_event event;
+    event.data.fd = fd;
+    event.events = ev | EPOLLONESHOT | EPOLLRDHUP;
+    epoll_ctl(epollfd,EPOLL_CTL_MOD,fd,&event);
 }
 #endif
 
