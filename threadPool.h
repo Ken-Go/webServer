@@ -43,6 +43,10 @@ MyThreadPool<T>::MyThreadPool(int threadNum,int requestNum){
             cout<<"threadPool::create thead num :"<< i << "failure!!!"<<endl;
             throw std::exception();
         };
+        if(pthread_detach(&myThreads[i]) != 0){
+            cout<<"threadPool::detach thead num :"<< i << "failure!!!"<<endl;
+            throw std::exception();
+        };
     }
 };
 

@@ -79,6 +79,12 @@ private:
     sem_t mySem;
 };
 
+void setNonBlocking(int fd){
+    int oldFlag = fcntl(fd,F_GETFL);
+    int newFlag = oldFlag | O_NONBLOCK;
+    fcntl(fd,F_SETFL,newFlag);
+}
+
 void addSignal(int sigNum,void(handler)(int)){
     struct sigaction sa;
     memset(&sa,'\0',sizeof(sa));
@@ -88,14 +94,18 @@ void addSignal(int sigNum,void(handler)(int)){
 }
 
 //添加文件描述符
-void addEpollFd(int epollfd,int fd,bool oneShot){
+void addEpollFd(int epollfd,int fd,bool oneShot,bool et){
     epoll_event event;
     event.data.fd =  fd;
-    event.events = EPOLLIN | EPOLLRDHUP;
+    event.events = EPOLLIN | EPOLLRDHUP ;
     if(oneShot){
         event.events | EPOLLONESHOT;
     }
+    if(et){
+        event.events | EPOLLET;
+    }
     epoll_ctl(epollfd,EPOLL_CTL_ADD,fd,&event);
+    setnonblocking(fd);
 }; 
 
 //删除文件描述符

@@ -47,10 +47,47 @@ int main(int argc, char* argv[]){
     accept(listenFd,5);
 
     epoll_event events[maxEventNum];
-    int epollfd = e
+    int epollfd = epoll_create(5);
 
+    addEpollFd(epollfd,listenFd,false);
 
+    httpConn::m_epollfd = epollfd;
 
+    while(true){
+        int num = epoll_wait(epollfd,events,maxEventNum,-1);
+        if(num < 0 && errno != EINTR){
+            cout<<"epoll failure"<<endl;
+            break;
+        }
+        for(int i =0; i < num;i++){
+            int sockfd = events[i].data.fd;
+            if(sockfd == listenFd){
+                struct sockaddr_in inAddress;
+                socklen_t inAddressLen = sizeof(inAddress);
+                int connfd = accept(listenFd,(struct sockaddr *)inAddress,&inAddressLen);
+                if(httpConn::m_userCount >= maxFd){
+                    //目前连接数满了，回复500，服务器正忙
+                    close(connfd);
+                }
+                users[connfd].init(connfd,inAddress);
 
+            }else if(events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR)){
+                users[sockfd].closeConn();
+            }else if(events[i].events & EPOLLIN){
+                if(users[sockfd].read()){
+                    pool->append(users[sockfd]);
+                }else{
+                    users[sockfd].closeConn();
+                }
+            }else if(events[i].events & EPOLLOUT){
+                if(!user[sockfd].write()){
+                    users[sockfd].closeConn();
+                }
+            }
+        }
+    }
+
+    close(epollfd);
+    close(listenFd);
     return 0;
 }
